@@ -53,6 +53,9 @@ class Deluminator:
 
         Args:
             files: Files with raw images.
+
+        Returns:
+            A list of RGB images.
         """
         images = []
 
