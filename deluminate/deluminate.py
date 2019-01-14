@@ -32,7 +32,7 @@ class Deluminator:
         Args:
             files: Files with light frame raw images.
         """
-        self.light_frames_raw += self.load_raw_files(files)
+        self.light_frames += self.load_raw_files(files)
 
     def load_dark_frames(self, files):
         """Load dark frame files and calculate reference.
@@ -40,16 +40,15 @@ class Deluminator:
         Args:
             files: Files with dark frame raw images.
         """
-        self.dark_frames_raw += self.load_raw_files(files)
+        self.dark_frames += self.load_raw_files(files)
         self.get_dark_reference()
 
     def get_dark_reference(self):
         """Calculate dark reference."""
         self.dark_reference = np.mean(
-            [image.raw_image for image in self.dark_frames_raw], 0).astype(np.uint16)
+            [image for image in self.dark_frames], 0).astype(np.uint16)
 
-    @staticmethod
-    def load_raw_files(files):
+    def load_raw_files(self, files):
         """Load a list of raw_files.
 
         Args:
@@ -58,6 +57,6 @@ class Deluminator:
         images = []
 
         for file in files:
-            images.append(rp.imread(file))
+            images.append(rp.imread(file).postprocess(**self.demosaic_parameters))
 
         return images
