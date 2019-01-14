@@ -5,9 +5,25 @@ import rawpy as rp
 class Deluminator:
     """Many class for image processing."""
 
-    def __init__(self):
-        self.light_frames_raw = []
-        self.dark_frames_raw = []
+    def __init__(self, demosaic_parameters: dict = None):
+        """Class constructor.
+
+        Args:
+            demosaic_parameters: Supply demosaic parameters for rawpy. If not supplied,
+                uses setting that should work fine most of the time.
+        """
+        if not demosaic_parameters:
+            demosaic_parameters = {
+                'demosaic_algorithm': rp.DemosaicAlgorithm.AHD,
+                'median_filter_passes': 3,
+                'use_camera_wb': False,
+                'no_auto_bright': True,
+                'gamma': (1, 1),
+                'output_bps': 16
+            }
+        self.demosaic_parameters = demosaic_parameters
+        self.light_frames = []
+        self.dark_frames = []
         self.dark_reference = None
 
     def load_light_frames(self, files):
