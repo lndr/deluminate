@@ -14,7 +14,7 @@ class Deluminator:
         Args:
             files: Files with light frame raw images.
         """
-        self.light_frames_raw.append(*self.load_raw_files(files))
+        self.light_frames_raw += self.load_raw_files(files)
 
     def load_dark_frames(self, files):
         """Load dark frame files.
@@ -22,7 +22,7 @@ class Deluminator:
         Args:
             files: Files with dark frame raw images.
         """
-        self.dark_frames_raw.append(*self.load_raw_files(files))
+        self.dark_frames_raw += self.load_raw_files(files)
 
     @staticmethod
     def load_raw_files(files):
