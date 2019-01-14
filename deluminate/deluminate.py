@@ -1,5 +1,8 @@
+import logging as lg
 import numpy as np
 import rawpy as rp
+
+logger = lg.getLogger('deluminate')
 
 
 class Deluminator:
@@ -33,6 +36,7 @@ class Deluminator:
             files: Files with light frame raw images.
         """
         self.light_frames += self.load_raw_files(files)
+        logger.info('Light frames loaded.')
 
     def load_dark_frames(self, files):
         """Load dark frame files and calculate reference.
@@ -41,12 +45,14 @@ class Deluminator:
             files: Files with dark frame raw images.
         """
         self.dark_frames += self.load_raw_files(files)
+        logger.info('Dark frames loaded.')
         self.get_dark_reference()
 
     def get_dark_reference(self):
         """Calculate dark reference."""
         self.dark_reference = np.mean(
             [image for image in self.dark_frames], 0).astype(np.uint16)
+        logger.info('Dark reference calculated.')
 
     def load_raw_files(self, files):
         """Load a list of raw_files.
