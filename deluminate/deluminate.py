@@ -1,4 +1,5 @@
 import logging as lg
+import matplotlib.pyplot as pp
 import numpy as np
 import rawpy as rp
 
@@ -99,3 +100,18 @@ class Deluminator:
             images.append(rp.imread(file).postprocess(**self.demosaic_parameters))
 
         return images
+
+    @staticmethod
+    def preview_image(image, auto_brightness: bool = False):
+        """Preview image using matplotlib.
+
+        Args:
+            image: Image from list inside Deluminator.
+            auto_brightness: Auto scale brightness.
+        """
+        pp.figure()
+        if not auto_brightness:
+            pp.imshow((image / 2 ** 8).astype(np.uint8))
+        else:
+            scale = np.max(image)
+            pp.imshow((image * 2 ** 8 / scale))
