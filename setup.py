@@ -30,6 +30,7 @@ setup(
 
     # Runtime dependencies
     install_requires=[
+        'matplotlib',
         'rawpy'
     ],
 
