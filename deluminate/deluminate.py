@@ -28,6 +28,7 @@ class Deluminator:
         self.light_frames = []
         self.dark_frames = []
         self.dark_reference = None
+        self.deluminated_frames = []
 
     def load_light_frames(self, files):
         """Load light frame files.
@@ -53,6 +54,35 @@ class Deluminator:
         self.dark_reference = np.mean(
             [image for image in self.dark_frames], 0).astype(np.uint16)
         logger.info('Dark reference calculated.')
+
+    def deluminate(self, degree: int = 2):
+        """Remove background brightness by subtracting a polynomial of the supplied degree from
+        image data.
+
+        Args:
+            degree: Degree of the polynomial to subtract.
+        """
+        x_grid, y_grid = np.meshgrid(range(self.light_frames[0].shape[0]),
+                                     range(self.light_frames[0].shape[1]))
+        fit_matrix = []
+        for ii in range(degree + 1):
+            for jj in range(degree + 1):
+                fit_matrix.append(x_grid.flatten() ** ii * y_grid.flatten() ** jj)
+        fit_matrix = np.array(fit_matrix).T
+        logger.info('Matrix for delumination created.')
+
+        for image in self.light_frames:
+            if self.dark_reference is not None:
+                image -= self.dark_reference
+
+            new_image = []
+            for ii in range(3):
+                channel = image[:, :, ii].astype(np.int32)
+                poly_params = np.linalg.lstsq(fit_matrix, channel.flatten())
+                channel -= fit_matrix.dot(poly_params[0]).reshape(channel.shape).astype(np.uint16)
+                new_image.append(np.clip(channel, 0, 2 ** 16 - 1).astype(np.uint16))
+            self.deluminated_frames.append(np.moveaxis(np.array(new_image), 0, -1))
+            logger.info('Image deluminated.')
 
     def load_raw_files(self, files):
         """Load a list of raw_files.
