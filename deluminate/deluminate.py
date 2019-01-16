@@ -53,7 +53,7 @@ class Deluminator:
     def get_dark_reference(self):
         """Calculate dark reference."""
         self.dark_reference = np.mean(
-            [image for image in self.dark_frames], 0).astype(np.uint16)
+            [image for image in self.dark_frames], 0)
         logger.info('Dark reference calculated.')
 
     def deluminate(self, degree: int = 2):
@@ -73,14 +73,13 @@ class Deluminator:
         logger.info('Matrix for delumination created.')
 
         for image in self.light_frames:
-            if self.dark_reference is not None:
-                image -= self.dark_reference
-
             new_image = []
             for ii in range(3):
-                channel = image[:, :, ii].astype(np.int32)
+                channel = image[:, :, ii].astype(float)
+                if self.dark_reference is not None:
+                    channel -= self.dark_reference[:, :, ii]
                 poly_params = np.linalg.lstsq(fit_matrix, channel.flatten())
-                channel -= fit_matrix.dot(poly_params[0]).reshape(channel.shape).astype(np.uint16)
+                channel -= fit_matrix.dot(poly_params[0]).reshape(channel.shape)
                 new_image.append(np.clip(channel, 0, 2 ** 16 - 1).astype(np.uint16))
             self.deluminated_frames.append(np.moveaxis(np.array(new_image), 0, -1))
             logger.info('Image deluminated.')
