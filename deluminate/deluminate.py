@@ -112,4 +112,4 @@ class Deluminator:
             pp.imshow((image / 2 ** 8).astype(np.uint8))
         else:
             scale = np.max(image)
-            pp.imshow((image * 2 ** 8 / scale))
+            pp.imshow((image.astype(float) / scale))
