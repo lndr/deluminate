@@ -20,7 +20,6 @@ class Deluminator:
             demosaic_parameters = {
                 'demosaic_algorithm': rp.DemosaicAlgorithm.AHD,
                 'median_filter_passes': 3,
-                'use_camera_wb': False,
                 'no_auto_bright': True,
                 'gamma': (1, 1),
                 'output_bps': 16
