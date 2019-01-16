@@ -1,6 +1,8 @@
 import logging as lg
 import matplotlib.pyplot as pp
 import numpy as np
+import os
+import png
 import rawpy as rp
 
 logger = lg.getLogger('deluminate')
@@ -82,6 +84,20 @@ class Deluminator:
                 new_image.append(np.clip(channel, 0, 2 ** 16 - 1).astype(np.uint16))
             self.deluminated_frames.append(np.moveaxis(np.array(new_image), 0, -1))
             logger.info('Image deluminated.')
+
+    def export_deluminated(self):
+        """Export the deluminated images as 16 bit pngs."""
+        for image in self.deluminated_frames:
+            ii = 0
+            while os.path.exists('deluminated{:04d}.png'.format(ii)):
+                ii += 1
+
+            with open('deluminated{:04d}.png'.format(ii), 'wb') as file:
+                writer = png.Writer(width=image.shape[1], height=image.shape[0], bitdepth=16)
+                # Convert to  list of lists expected by the png writer.
+                image_list = image.reshape(-1, image.shape[1] * image.shape[2]).tolist()
+                writer.write(file, image_list)
+            logger.info('Image {} exported.'.format(file.name))
 
     def load_raw_files(self, files):
         """Load a list of raw_files.
