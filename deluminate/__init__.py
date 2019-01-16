@@ -1,1 +1,1 @@
-from .deluminate import Deluminator
+from .deluminate import Deluminator, process_directory
