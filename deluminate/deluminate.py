@@ -9,8 +9,8 @@ logger = lg.getLogger('deluminate')
 
 
 def process_directory(raw_file_extension: str, degree: int,
-                      path: str = None, demosaic_parameters: dict = None):
-    """Process all raw files in a diretory, no dark frame compensation.
+                      path: str = None, demosaic_parameters: dict = None, verbose: bool = False):
+    """Process all raw files in a directory, no dark frame compensation.
 
     Args:
         raw_file_extension: Extension of the raw files to process.
@@ -18,17 +18,19 @@ def process_directory(raw_file_extension: str, degree: int,
         path: Path to the directory (defaults to '.').
         demosaic_parameters: Demosaic parameters for rawpy. If not supplied, uses setting that
             should work fine most of the time.
+        verbose: Log progress to command line.
     """
     if not path:
         path = '.'
-    deluminator = Deluminator(demosaic_parameters)
-    light_frames = []
+    if verbose:
+        lg.basicConfig(level=lg.INFO)
+
     for file in os.listdir(path):
         if file.endswith(raw_file_extension):
-            light_frames.append(file)
-    deluminator.load_light_frames(light_frames)
-    deluminator.deluminate(degree)
-    deluminator.export_deluminated()
+            deluminator = Deluminator(demosaic_parameters)
+            deluminator.load_light_frames([file])
+            deluminator.deluminate(degree)
+            deluminator.export_deluminated()
 
 
 class Deluminator:
