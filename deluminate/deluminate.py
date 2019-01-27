@@ -9,8 +9,9 @@ import rawpy as rp
 logger = lg.getLogger('deluminate')
 
 
-def process_directory(raw_file_extension: str, degree: int,
-                      path: str = None, demosaic_parameters: dict = None, verbose: bool = False):
+def process_directory_raw(raw_file_extension: str, degree: int,
+                          path: str = None, demosaic_parameters: dict = None,
+                          verbose: bool = False):
     """Process all raw files in a directory, no dark frame compensation.
 
     Args:
@@ -29,7 +30,7 @@ def process_directory(raw_file_extension: str, degree: int,
     for file in os.listdir(path):
         if file.endswith(raw_file_extension):
             deluminator = Deluminator(demosaic_parameters)
-            deluminator.load_light_frames([file])
+            deluminator.load_light_frames_raw([file])
             deluminator.deluminate(degree)
             deluminator.export_deluminated()
 
@@ -61,8 +62,8 @@ class Deluminator:
         self.dark_reference = None
         self.deluminated_frames = []
 
-    def load_light_frames(self, files):
-        """Load light frame files.
+    def load_light_frames_raw(self, files):
+        """Load light raw frame files.
 
         Args:
             files: Files with light frame raw images.
@@ -70,8 +71,8 @@ class Deluminator:
         self.light_frames += self.load_raw_files(files)
         logger.info('Light frames loaded.')
 
-    def load_dark_frames(self, files):
-        """Load dark frame files and calculate reference.
+    def load_dark_frames_raw(self, files):
+        """Load dark frame raw files and calculate reference.
 
         Args:
             files: Files with dark frame raw images.
