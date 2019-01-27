@@ -141,7 +141,7 @@ class Deluminator:
             logger.info('Image {} exported.'.format(file.name))
 
     def load_raw_files(self, files):
-        """Load a list of raw_files.
+        """Load a list of raw files.
 
         Args:
             files: Files with raw images.
