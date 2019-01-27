@@ -1,4 +1,5 @@
 import logging as lg
+import matplotlib.colors as co
 import matplotlib.pyplot as pp
 import numpy as np
 import os
@@ -36,12 +37,14 @@ def process_directory(raw_file_extension: str, degree: int,
 class Deluminator:
     """Many class for image processing."""
 
-    def __init__(self, demosaic_parameters: dict = None):
+    def __init__(self, demosaic_parameters: dict = None, mode: str = 'HSV'):
         """Class constructor.
 
         Args:
             demosaic_parameters: Supply demosaic parameters for rawpy. If not supplied,
                 uses setting that should work fine most of the time.
+            mode: 'HSV' (default) deluminate using the value channel of a HSV representation;
+                'RGB' deluminate every color channel separately.
         """
         if not demosaic_parameters:
             demosaic_parameters = {
@@ -52,6 +55,7 @@ class Deluminator:
                 'output_bps': 16
             }
         self.demosaic_parameters = demosaic_parameters
+        self.mode = mode
         self.light_frames = []
         self.dark_frames = []
         self.dark_reference = None
@@ -99,15 +103,26 @@ class Deluminator:
         logger.info('Matrix for delumination created.')
 
         for image in self.light_frames:
-            new_image = []
-            for ii in range(3):
-                channel = image[:, :, ii].astype(float)
+
+            if self.mode == 'RGB':
+                new_image = []
+                for ii in range(3):
+                    channel = image[:, :, ii]
+                    if self.dark_reference is not None:
+                        channel -= self.dark_reference[:, :, ii]
+                    poly_params = np.linalg.lstsq(fit_matrix, channel.flatten())
+                    channel -= fit_matrix.dot(poly_params[0]).reshape(channel.shape)
+                    new_image.append(np.clip(channel, 0, 2 ** 16 - 1).astype(np.uint16))
+                self.deluminated_frames.append(np.moveaxis(np.array(new_image), 0, -1))
+            elif self.mode == 'HSV':
                 if self.dark_reference is not None:
-                    channel -= self.dark_reference[:, :, ii]
-                poly_params = np.linalg.lstsq(fit_matrix, channel.flatten())
-                channel -= fit_matrix.dot(poly_params[0]).reshape(channel.shape)
-                new_image.append(np.clip(channel, 0, 2 ** 16 - 1).astype(np.uint16))
-            self.deluminated_frames.append(np.moveaxis(np.array(new_image), 0, -1))
+                    image_hsv = co.rgb_to_hsv(np.clip(image - self.dark_reference, 0, np.inf))
+                else:
+                    image_hsv = co.rgb_to_hsv(image)
+                poly_params = np.linalg.lstsq(fit_matrix, image_hsv[:, :, 2].flatten())
+                image_hsv[:, :, 2] -= \
+                    fit_matrix.dot(poly_params[0]).reshape(image_hsv[:, :, 2].shape)
+                self.deluminated_frames.append(co.hsv_to_rgb(np.clip(image_hsv, 0, np.inf)))
             logger.info('Image deluminated.')
 
     def export_deluminated(self):
@@ -136,7 +151,7 @@ class Deluminator:
         images = []
 
         for file in files:
-            images.append(rp.imread(file).postprocess(**self.demosaic_parameters))
+            images.append(rp.imread(file).postprocess(**self.demosaic_parameters).astype(float))
 
         return images
 
