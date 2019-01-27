@@ -71,6 +71,15 @@ class Deluminator:
         self.light_frames += self.load_raw_files(files)
         logger.info('Light frames loaded.')
 
+    def load_light_frames_png(self, files):
+        """Load light frames from png files.
+
+        Args:
+            files: Png files with light frames.
+        """
+        self.light_frames += self.load_png_files(files)
+        logger.info('Light frames loaded.')
+
     def load_dark_frames_raw(self, files):
         """Load dark frame raw files and calculate reference.
 
@@ -78,6 +87,16 @@ class Deluminator:
             files: Files with dark frame raw images.
         """
         self.dark_frames += self.load_raw_files(files)
+        logger.info('Dark frames loaded.')
+        self.get_dark_reference()
+
+    def load_dark_frames_png(self, files):
+        """Load dark frames from png files.
+
+        Args:
+            files: Png files with dark frames.
+        """
+        self.dark_frames += self.load_png_files(files)
         logger.info('Dark frames loaded.')
         self.get_dark_reference()
 
@@ -153,6 +172,33 @@ class Deluminator:
 
         for file in files:
             images.append(rp.imread(file).postprocess(**self.demosaic_parameters).astype(float))
+
+        return images
+
+    @staticmethod
+    def load_png_files(files):
+        """Load a list of png files.
+
+        Args:
+            files: Png images.
+
+        Returns:
+            A list of RGB images.
+        """
+        images = []
+
+        for file in files:
+            reader = png.Reader(file)
+            row_count, column_count, png_data, meta = reader.read()
+            plane_count = meta['planes']
+            if plane_count == 3:  # Image has no alpha channel
+                images.append(np.array(list(map(np.uint16, png_data))).reshape(
+                        column_count, row_count, plane_count).astype(float))
+            elif plane_count == 4:  # iImage has alpha channel
+                images.append(np.array(list(map(np.uint16, png_data))).reshape(
+                        column_count, row_count, plane_count)[:, :, :3].astype(float))
+            else:
+                logger.warning('Unexpected number of planes in png image.')
 
         return images
 
