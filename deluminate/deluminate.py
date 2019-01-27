@@ -157,7 +157,7 @@ class Deluminator:
         return images
 
     @staticmethod
-    def preview_image(image, auto_brightness: bool = False):
+    def preview_image(image: np.ndarray, auto_brightness: bool = False):
         """Preview image using matplotlib.
 
         Args:
