@@ -31,7 +31,7 @@ def process_directory_raw(raw_file_extension: str, degree: int,
         if file.endswith(raw_file_extension):
             deluminator = Deluminator(demosaic_parameters)
             deluminator.load_light_frames_raw([file])
-            deluminator.deluminate(degree)
+            deluminator.deluminate_polynomial(degree)
             deluminator.export_deluminated()
 
 
@@ -106,12 +106,14 @@ class Deluminator:
             [image for image in self.dark_frames], 0)
         logger.info('Dark reference calculated.')
 
-    def deluminate(self, degree: int = 2):
+    def deluminate_polynomial(self, degree: int = 2, reduce_points: float = 1000):
         """Remove background brightness by subtracting a polynomial of the supplied degree from
         image data.
 
         Args:
             degree: Degree of the polynomial to subtract.
+            reduce_points: Quotient by which the number of supporting point is reduced by.
+                Points are chosen randomly.
         """
         x_grid, y_grid = np.meshgrid(range(self.light_frames[0].shape[0]),
                                      range(self.light_frames[0].shape[1]))
@@ -122,6 +124,8 @@ class Deluminator:
         fit_matrix = np.array(fit_matrix).T
         logger.info('Matrix for delumination created.')
 
+        point_mask = (np.random.rand(x_grid.size) - 1 / reduce_points) < 0
+
         for image in self.light_frames:
 
             if self.mode == 'RGB':
@@ -129,20 +133,27 @@ class Deluminator:
                 for ii in range(3):
                     channel = image[:, :, ii]
                     if self.dark_reference is not None:
-                        channel -= self.dark_reference[:, :, ii]
-                    poly_params = np.linalg.lstsq(fit_matrix, channel.flatten())
+                        channel = np.clip(channel - self.dark_reference[:, :, ii])
+                    less_med = (channel < np.median(channel)).flatten()
+                    filter_ = np.logical_and(point_mask, less_med)
+                    poly_params = np.linalg.lstsq(fit_matrix[filter_],
+                                                  channel.flatten()[filter_])
                     channel -= fit_matrix.dot(poly_params[0]).reshape(channel.shape)
-                    new_image.append(np.clip(channel, 0, 2 ** 16 - 1).astype(np.uint16))
+                    new_image.append(np.clip(channel, 0, 1))
                 self.deluminated_frames.append(np.moveaxis(np.array(new_image), 0, -1))
             elif self.mode == 'HSV':
                 if self.dark_reference is not None:
-                    image_hsv = co.rgb_to_hsv(np.clip(image - self.dark_reference, 0, np.inf))
+                    image_wo_dark = np.clip(image - self.dark_reference, 0, 1)
+                    image_hsv = co.rgb_to_hsv(image_wo_dark)
                 else:
                     image_hsv = co.rgb_to_hsv(image)
-                poly_params = np.linalg.lstsq(fit_matrix, image_hsv[:, :, 2].flatten())
+                less_med = (image_hsv[:, :, 2] < np.median(image_hsv[:, :, 2])).flatten()
+                filter_ = np.logical_and(point_mask, less_med)
+                poly_params = np.linalg.lstsq(fit_matrix[filter_],
+                                              image_hsv[:, :, 2].flatten()[filter_])
                 image_hsv[:, :, 2] -= \
                     fit_matrix.dot(poly_params[0]).reshape(image_hsv[:, :, 2].shape)
-                self.deluminated_frames.append(co.hsv_to_rgb(np.clip(image_hsv, 0, np.inf)))
+                self.deluminated_frames.append(co.hsv_to_rgb(np.clip(image_hsv, 0, 1)))
             logger.info('Image deluminated.')
 
     def export_deluminated(self):
