@@ -155,7 +155,8 @@ class Deluminator:
             with open('deluminated{:04d}.png'.format(ii), 'wb') as file:
                 writer = png.Writer(width=image.shape[1], height=image.shape[0], bitdepth=16)
                 # Convert to  list of lists expected by the png writer.
-                image_list = image.reshape(-1, image.shape[1] * image.shape[2]).tolist()
+                image_list = (image * 2 ** 16).reshape(-1, image.shape[1] *
+                                                       image.shape[2]).tolist()
                 writer.write(file, image_list)
             logger.info('Image {} exported.'.format(file.name))
 
@@ -171,7 +172,8 @@ class Deluminator:
         images = []
 
         for file in files:
-            images.append(rp.imread(file).postprocess(**self.demosaic_parameters).astype(float))
+            new_image = rp.imread(file).postprocess(**self.demosaic_parameters).astype(float)
+            images.append(np.clip(new_image / np.max(new_image, 0, 1)))
 
         return images
 
@@ -192,11 +194,13 @@ class Deluminator:
             row_count, column_count, png_data, meta = reader.read()
             plane_count = meta['planes']
             if plane_count == 3:  # Image has no alpha channel
-                images.append(np.array(list(map(np.uint16, png_data))).reshape(
-                        column_count, row_count, plane_count).astype(float))
+                new_image = np.array(list(map(np.uint16, png_data))).reshape(
+                        column_count, row_count, plane_count).astype(float)
+                images.append(new_image / np.max(new_image))
             elif plane_count == 4:  # iImage has alpha channel
-                images.append(np.array(list(map(np.uint16, png_data))).reshape(
-                        column_count, row_count, plane_count)[:, :, :3].astype(float))
+                new_image = np.array(list(map(np.uint16, png_data))).reshape(
+                            column_count, row_count, plane_count)[:, :, :3].astype(float)
+                images.append(new_image / np.max(new_image))
             else:
                 logger.warning('Unexpected number of planes in png image.')
 
@@ -212,7 +216,6 @@ class Deluminator:
         """
         pp.figure()
         if not auto_brightness:
-            pp.imshow((image / 2 ** 8).astype(np.uint8))
+            pp.imshow(image)
         else:
-            scale = np.max(image)
-            pp.imshow((image.astype(float) / scale))
+            pp.imshow((image / np.max(image)))
