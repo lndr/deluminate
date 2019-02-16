@@ -184,7 +184,7 @@ class Deluminator:
 
         for file in files:
             new_image = rp.imread(file).postprocess(**self.demosaic_parameters).astype(float)
-            images.append(np.clip(new_image / np.max(new_image, 0, 1)))
+            images.append(np.clip(new_image / np.max(new_image), 0, 1))
 
         return images
 
