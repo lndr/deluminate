@@ -36,7 +36,7 @@ def process_directory_raw(raw_file_extension: str, degree: int,
 
 
 class Deluminator:
-    """Many class for image processing."""
+    """Main class for image processing."""
 
     def __init__(self, demosaic_parameters: dict = None, mode: str = 'HSV'):
         """Class constructor.
